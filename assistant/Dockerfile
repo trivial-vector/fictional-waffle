@@ -1,6 +1,6 @@
-# Build context is the repo root (see docker-compose.yml `build.context: .`,
-# `build.dockerfile: assistant/Dockerfile`) so this can COPY the sibling
-# web/ directory in alongside the assistant app itself.
+# Backend-only image — build context is ./assistant (see docker-compose.yml).
+# The web UI is a separate, standalone container (see web/Dockerfile) and is
+# not copied in here.
 FROM python:3.12-slim
 
 WORKDIR /app
@@ -9,11 +9,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-COPY assistant/requirements.txt .
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY assistant/app ./app
-COPY web /web
+COPY app ./app
 
 ENV PYTHONUNBUFFERED=1
 EXPOSE 8080

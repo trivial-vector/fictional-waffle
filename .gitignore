@@ -7,4 +7,6 @@ kuzu_data/
 .venv/
 venv/
 
+**/voice_responses/
+
 .DS_Store

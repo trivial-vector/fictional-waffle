@@ -94,8 +94,11 @@ const clearSearchBtn = document.getElementById("clear-search-btn");
 
 let activeType = Object.keys(RECORD_TYPES)[0];
 
+// See chat.js's top-of-file comment: this container is deployed standalone,
+// so the backend base URL comes from config.js (window.ASSISTANT_CONFIG),
+// not from window.location or a relative path.
 function apiUrl(path) {
-  return `/api${path}`;
+  return `${window.ASSISTANT_CONFIG.apiBaseUrl}${path}`;
 }
 
 function renderTabs() {

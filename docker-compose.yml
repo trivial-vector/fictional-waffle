@@ -73,13 +73,13 @@ services:
               device_ids: ["${VLLM_GPU_DEVICE_ID}"]
               capabilities: [gpu]
 
-  # Build context is the repo root, not ./assistant, so the Dockerfile can
-  # COPY the sibling web/ directory in alongside the app — it's what main.py
-  # serves at "/" (chat + memory browser), with the API under /api/*.
+  # Backend only — the web UI is a separate standalone container (see
+  # `web` below), so this no longer needs the repo-root build context it
+  # briefly had. API lives under /api/*, CORS wide open (main.py) since the
+  # web container calling in cross-origin is the normal case now, not an
+  # edge case.
   assistant:
-    build:
-      context: .
-      dockerfile: assistant/Dockerfile
+    build: ./assistant
     restart: unless-stopped
     env_file: .env
     environment:
@@ -113,6 +113,26 @@ services:
       - "8092:8090"
     volumes:
       - whisper_cache:/root/.cache/huggingface
+
+  # Chat + memory-browser web UI — standalone nginx container, deployable on
+  # a different host than everything above (see web/Dockerfile and
+  # web/docker-entrypoint.sh). The defaults below assume it's running
+  # alongside the rest of the stack on the same desktop; for a remote
+  # deployment (e.g. running this container on the MacBook Air instead),
+  # override ASSISTANT_API_BASE_URL/VOICE_SERVICE_URL to the desktop's LAN
+  # address, and confirm the desktop's firewall allows inbound connections
+  # on 8081/8092 from wherever this container runs.
+  web:
+    build: ./web
+    restart: unless-stopped
+    environment:
+      ASSISTANT_API_BASE_URL: ${ASSISTANT_API_BASE_URL:-http://localhost:8081/api}
+      VOICE_SERVICE_URL: ${VOICE_SERVICE_URL:-http://localhost:8092/transcribe}
+    ports:
+      - "8082:80"
+    depends_on:
+      - assistant
+      - voice
 
 volumes:
   postgres_data:

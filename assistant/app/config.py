@@ -33,12 +33,6 @@ class Settings(BaseSettings):
     extraction_model: str = "qwen3:7b"
     embedding_model: str = "qwen3-embedding:0.6b"
 
-    # Web UI static files — /web inside the Docker image (see Dockerfile,
-    # which copies the repo's web/ directory there); main.py falls back to a
-    # path relative to this repo if that doesn't exist, for running outside
-    # Docker directly from the repo root.
-    web_dir: str = "/web"
-
     @property
     def postgres_dsn(self) -> str:
         return (

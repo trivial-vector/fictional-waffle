@@ -175,6 +175,23 @@ the design level:
   the same privacy reasoning as §7 — worth restating here because it was a
   live design choice (browser-native `SpeechRecognition` would have been
   less code), not a default.
+- **The web tier is a separate deployable unit from the backend tier**, not
+  bundled into the `assistant` container. This is the same "client vs.
+  server" split as the narrative engine's hardware topology doc (thin client
+  reaching over the network to wherever the heavier services actually run),
+  applied to this project: the backend needs the GPUs and stays on the
+  desktop, but nothing about a chat/memory UI requires being co-located with
+  them. Runtime-configurable backend URLs (`web/config.js.template`,
+  rendered at container start) are what make that possible without baking a
+  specific host into the built image.
+- **The web UI can be tested against a fake backend, not just no backend.**
+  `docker-compose.test.yml` + `mock-backend/` reuse the exact same
+  configurable-URL mechanism to point the real `web` container at an
+  in-memory stand-in instead of the real `assistant` service — see
+  `README.md`'s "Offline test harness" section. This falls directly out of
+  the point above: once the backend URL is just a runtime variable, "point it
+  at a fake" and "point it at a remote real one" are the same mechanism, not
+  two separate features.
 
 ## 9. Open questions
 

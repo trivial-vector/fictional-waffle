@@ -1,0 +1,69 @@
+version: "3.9"
+
+# Standalone, disconnected test harness. Does NOT talk to the real
+# `assistant` service, Postgres, Kuzu, Ollama, vLLM, or the Anthropic API,
+# and has no dependency on the GPU desktop being reachable at all. Brings up:
+#
+#   - mock-backend: an in-memory fake of the assistant API surface
+#     (mock-backend/app.py) — same paths and response shapes the web UI
+#     already expects, canned replies, nothing real behind it.
+#   - voice: the REAL voice-to-text service (faster-whisper, CPU-only),
+#     reused unmodified from ./voice. It never depended on the GPU desktop in
+#     the first place, so this genuinely exercises the real local STT
+#     pipeline, not a fake.
+#   - web: the REAL chat + memory browser UI, reused unmodified from ./web,
+#     just pointed at mock-backend instead of the real assistant.
+#
+# Use this to check the interface and the voice roundtrip — rendering, the
+# mic button, file attachment, the memory browser's forms — on a laptop with
+# no GPU and nothing else running:
+#
+#   docker compose -f docker-compose.test.yml up --build
+#   open http://localhost:8084
+#
+# Ports (8083/8084/8093) are offset from both the real stack
+# (8081/8082/8092, docker-compose.yml) and the narrative engine's, so this
+# can run alongside either without colliding. ASSISTANT_API_BASE_URL/
+# VOICE_SERVICE_URL below intentionally point at `localhost` rather than
+# Docker service names — the browser resolves them, not the containers, and
+# this harness assumes the browser is running on this same machine.
+#
+# NOTE: this file reuses the service names `voice` and `web` from
+# docker-compose.yml. Ports won't collide, but Compose's default project
+# name is the directory name, so containers/networks from both files would
+# collide on name if launched with the default project name at the same
+# time. Always pass an explicit `-p`, e.g.:
+#   docker compose -p assistant-test -f docker-compose.test.yml up --build
+
+services:
+  mock-backend:
+    build: ./mock-backend
+    restart: unless-stopped
+    ports:
+      - "8083:8080"
+
+  voice:
+    build: ./voice
+    restart: unless-stopped
+    environment:
+      WHISPER_MODEL_SIZE: ${WHISPER_MODEL_SIZE:-small}
+      WHISPER_COMPUTE_TYPE: ${WHISPER_COMPUTE_TYPE:-int8}
+    ports:
+      - "8093:8090"
+    volumes:
+      - whisper_cache_test:/root/.cache/huggingface
+
+  web:
+    build: ./web
+    restart: unless-stopped
+    environment:
+      ASSISTANT_API_BASE_URL: http://localhost:8083/api
+      VOICE_SERVICE_URL: http://localhost:8093/transcribe
+    ports:
+      - "8084:80"
+    depends_on:
+      - mock-backend
+      - voice
+
+volumes:
+  whisper_cache_test:

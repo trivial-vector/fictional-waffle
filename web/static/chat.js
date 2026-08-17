@@ -1,15 +1,15 @@
-// Chat page logic. Talks to the assistant API (same origin, /api/*) and the
-// separate local voice-transcription service (different container/port).
-//
-// VOICE_SERVICE_URL: built from the current page's hostname rather than
-// hardcoded to localhost, so this works whether you're on the desktop
-// itself or on another machine on the LAN (e.g. the MacBook Air client
-// talking to the desktop, per the hardware topology in the narrative
-// engine's design doc that this project's hardware plan carried over).
-// Change VOICE_SERVICE_PORT below if you remapped the port in
-// docker-compose.yml.
-const VOICE_SERVICE_PORT = 8092;
-const VOICE_SERVICE_URL = `${window.location.protocol}//${window.location.hostname}:${VOICE_SERVICE_PORT}/transcribe`;
+// Chat page logic. This container (web/) is deployed standalone — possibly
+// on a different host than the assistant/voice containers entirely (e.g.
+// this running on the MacBook Air while the backend runs on the desktop,
+// per the hardware topology doc) — so the backend URLs are never assumed
+// from window.location. They come from config.js, generated at container
+// start from ASSISTANT_API_BASE_URL / VOICE_SERVICE_URL (see
+// docker-entrypoint.sh and docker-compose.yml). This requires the assistant
+// service's CORS policy to allow this origin — it currently allows all
+// origins (see assistant/app/main.py), fine for a private/local deployment,
+// worth tightening for anything more exposed.
+const API_BASE_URL = window.ASSISTANT_CONFIG.apiBaseUrl;
+const VOICE_SERVICE_URL = window.ASSISTANT_CONFIG.voiceServiceUrl;
 
 // Turn-number and session tracking is a client-side workaround for a known
 // gap: the backend has no session/turn-counter persistence (see DESIGN.md
@@ -116,7 +116,7 @@ composerEl.addEventListener("submit", async (e) => {
   attachmentChip.classList.add("hidden");
 
   try {
-    const resp = await fetch(`/api/message?turn_number=${turnNumber}`, {
+    const resp = await fetch(`${API_BASE_URL}/message?turn_number=${turnNumber}`, {
       method: "POST",
       body: form,
     });

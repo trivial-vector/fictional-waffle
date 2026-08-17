@@ -1,0 +1,11 @@
+// Templated at container start by docker-entrypoint.sh (envsubst) into
+// config.js, which index.html/memory.html load before chat.js/memory.js.
+// This is what makes the web container deployable separately from — and on
+// a different host than — the assistant/voice containers: point these at
+// wherever those actually live via the ASSISTANT_API_BASE_URL /
+// VOICE_SERVICE_URL environment variables in docker-compose.yml (or however
+// you run this container), no rebuild required.
+window.ASSISTANT_CONFIG = {
+  apiBaseUrl: "${ASSISTANT_API_BASE_URL}",
+  voiceServiceUrl: "${VOICE_SERVICE_URL}",
+};
