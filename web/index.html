@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Assistant</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-title">Assistant</div>
+  <nav class="topbar-nav">
+    <a href="/memory.html">Memory</a>
+  </nav>
+</header>
+
+<main class="chat-wrap">
+  <div id="messages" class="messages" aria-live="polite"></div>
+
+  <div id="attachment-chip" class="attachment-chip hidden">
+    <span id="attachment-name"></span>
+    <button id="attachment-remove" type="button" aria-label="Remove attachment">&times;</button>
+  </div>
+
+  <form id="composer" class="composer">
+    <button id="attach-btn" type="button" class="icon-btn" title="Attach file" aria-label="Attach file">
+      <!--!Font Awesome Free v7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.-->
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" aria-hidden="true"><path d="M352 128C352 110.3 337.7 96 320 96C302.3 96 288 110.3 288 128L288 288L128 288C110.3 288 96 302.3 96 320C96 337.7 110.3 352 128 352L288 352L288 512C288 529.7 302.3 544 320 544C337.7 544 352 529.7 352 512L352 352L512 352C529.7 352 544 337.7 544 320C544 302.3 529.7 288 512 288L352 288L352 128z"/></svg>
+    </button>
+    <input id="file-input" type="file" class="hidden" accept=".txt,.md,.markdown,.pdf">
+    <textarea id="message-input" rows="1" placeholder="Message the assistant..." aria-label="Message"></textarea>
+    <button id="mic-btn" type="button" class="icon-btn" title="Voice input" aria-label="Record voice message">
+      <!--!Font Awesome Free v7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.-->
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" aria-hidden="true"><path d="M320 64C267 64 224 107 224 160L224 288C224 341 267 384 320 384C373 384 416 341 416 288L416 160C416 107 373 64 320 64zM176 248C176 234.7 165.3 224 152 224C138.7 224 128 234.7 128 248L128 288C128 385.9 201.3 466.7 296 478.5L296 528L248 528C234.7 528 224 538.7 224 552C224 565.3 234.7 576 248 576L392 576C405.3 576 416 565.3 416 552C416 538.7 405.3 528 392 528L344 528L344 478.5C438.7 466.7 512 385.9 512 288L512 248C512 234.7 501.3 224 488 224C474.7 224 464 234.7 464 248L464 288C464 367.5 399.5 432 320 432C240.5 432 176 367.5 176 288L176 248z"/></svg>
+    </button>
+    <button id="send-btn" type="submit" class="icon-btn send-btn" title="Send" aria-label="Send message">
+      <!-- Original simple triangle glyph (not Font Awesome) — no send icon was provided, built to match the fill weight of the two above. -->
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" aria-hidden="true"><path d="M192 160L192 480L480 320Z"/></svg>
+    </button>
+  </form>
+  <div id="status-line" class="status-line"></div>
+</main>
+
+<script src="/static/chat.js"></script>
+</body>
+</html>

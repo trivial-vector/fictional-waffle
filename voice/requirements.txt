@@ -1,0 +1,6 @@
+# Minimum versions only — same caveat as the rest of this repo's
+# requirements files: not tested-current pins, freeze after first install.
+fastapi>=0.115
+uvicorn[standard]>=0.32
+python-multipart>=0.0.9
+faster-whisper>=1.0

@@ -1,0 +1,122 @@
+version: "3.9"
+
+# Same GPU-pinning caveat as the narrative engine's docker-compose.yml:
+# verify device_ids against `nvidia-smi -L` before first run. Requires the
+# NVIDIA Container Toolkit on the Docker host.
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5433:5432"  # offset from the narrative engine's 5432 in case both stacks run at once
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./assistant/app/db/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Per-turn extraction (Qwen3 7B) + embeddings (Qwen3-Embedding-0.6B),
+  # pinned to the 1080 Ti. Same reasoning as the narrative engine: Ollama
+  # wraps llama.cpp, the broad-compatibility path for this card's Pascal-era
+  # CUDA compute capability.
+  ollama:
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    ports:
+      - "11435:11434"  # offset from the narrative engine's 11434
+    volumes:
+      - ollama_data:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["${OLLAMA_GPU_DEVICE_ID}"]
+              capabilities: [gpu]
+
+  # Consolidation/reflection pass, pinned to the 3090 — repurposed from the
+  # narrative engine's NPC-voice seat (DESIGN.md §2/§4). Same vLLM-vs-Ollama
+  # reasoning: modern Ampere hardware, vLLM's throughput advantage is
+  # largest where fully supported.
+  vllm:
+    image: vllm/vllm-openai:latest
+    restart: unless-stopped
+    ipc: host
+    ports:
+      - "8001:8000"  # offset from the narrative engine's 8000
+    volumes:
+      - hf_cache:/root/.cache/huggingface
+    environment:
+      HUGGING_FACE_HUB_TOKEN: ${HUGGING_FACE_HUB_TOKEN:-}
+    command:
+      - "--model"
+      - "${CONSOLIDATION_MODEL_HF_REPO}"
+      - "--served-model-name"
+      - "${CONSOLIDATION_MODEL_NAME}"
+      - "--max-model-len"
+      - "16384"
+      - "--gpu-memory-utilization"
+      - "0.90"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["${VLLM_GPU_DEVICE_ID}"]
+              capabilities: [gpu]
+
+  # Build context is the repo root, not ./assistant, so the Dockerfile can
+  # COPY the sibling web/ directory in alongside the app — it's what main.py
+  # serves at "/" (chat + memory browser), with the API under /api/*.
+  assistant:
+    build:
+      context: .
+      dockerfile: assistant/Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      POSTGRES_HOST: postgres
+      OLLAMA_HOST: http://ollama:11434
+      VLLM_BASE_URL: http://vllm:8000/v1
+    ports:
+      - "8081:8080"  # offset from the narrative engine's 8080
+    volumes:
+      - kuzu_data:/data/kuzu
+    depends_on:
+      postgres:
+        condition: service_healthy
+      ollama:
+        condition: service_started
+      vllm:
+        condition: service_started
+
+  # Local speech-to-text for the chat page's mic button — CPU only,
+  # deliberately kept off both GPUs (see voice/app.py docstring). Separate
+  # container/port from `assistant` since it's a different dependency stack
+  # (faster-whisper/ctranslate2 + ffmpeg) and the web UI talks to it directly
+  # from the browser rather than through the assistant service.
+  voice:
+    build: ./voice
+    restart: unless-stopped
+    environment:
+      WHISPER_MODEL_SIZE: ${WHISPER_MODEL_SIZE:-small}
+      WHISPER_COMPUTE_TYPE: ${WHISPER_COMPUTE_TYPE:-int8}
+    ports:
+      - "8092:8090"
+    volumes:
+      - whisper_cache:/root/.cache/huggingface
+
+volumes:
+  postgres_data:
+  ollama_data:
+  hf_cache:
+  kuzu_data:
+  whisper_cache:

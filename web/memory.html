@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Memory — Assistant</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-title">Memory</div>
+  <nav class="topbar-nav">
+    <a href="/index.html">Chat</a>
+  </nav>
+</header>
+
+<main class="memory-wrap">
+  <div id="tabs" class="tabs"></div>
+
+  <div class="search-row">
+    <input id="search-input" type="text" placeholder="Search this memory type...">
+    <button id="search-btn" type="button">Search</button>
+    <button id="clear-search-btn" type="button">Clear</button>
+  </div>
+
+  <section class="panel">
+    <h3 id="list-title">Records</h3>
+    <div id="list-container"></div>
+  </section>
+
+  <section class="panel">
+    <h3>Add / update</h3>
+    <div id="form-container"></div>
+  </section>
+</main>
+
+<script src="/static/memory.js"></script>
+</body>
+</html>
